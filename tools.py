@@ -9,6 +9,7 @@ from lessons import first_lesson_id
 
 
 STATE_PATH = Path(__file__).with_name("state.json")
+TRACE_PATH = Path(__file__).with_name("trace.jsonl")
 
 
 DEFAULT_STATE = {
@@ -52,3 +53,19 @@ def add_history(state, lesson_id, passed, feedback):
         "passed": passed,
         "feedback": feedback,
     })
+
+
+def snapshot_state(state):
+    """提取 trace 需要的最小状态快照。"""
+    return {
+        "current_lesson": state.get("current_lesson"),
+        "completed_lessons": list(state.get("completed_lessons", [])),
+        "weak_points": list(state.get("weak_points", [])),
+        "history_count": len(state.get("history", [])),
+    }
+
+
+def write_trace(event):
+    """追加一行 JSONL trace，便于观察 Agent 执行过程。"""
+    with TRACE_PATH.open("a", encoding="utf-8") as file:
+        file.write(json.dumps(event, ensure_ascii=False) + "\n")

@@ -3,7 +3,7 @@
 
 from critic import review_answer
 from planner import apply_review_result, choose_next_lesson, is_finished
-from tools import add_history, load_state, save_state
+from tools import add_history, load_state, save_state, snapshot_state, write_trace
 
 
 def show_lesson(lesson):
@@ -18,9 +18,23 @@ def show_lesson(lesson):
 def run_once(state, answer, use_llm=None):
     """执行一轮学习、批改和状态更新。"""
     lesson = choose_next_lesson(state)
+    before_state = snapshot_state(state)
     result = review_answer(lesson, answer, use_llm=use_llm)
     apply_review_result(state, lesson, result)
     add_history(state, lesson["id"], result["passed"], result["feedback"])
+    write_trace({
+        "lesson_id": lesson["id"],
+        "lesson_title": lesson["title"],
+        "answer": answer,
+        "critic_result": {
+            "passed": result["passed"],
+            "reviewer": result.get("reviewer", "unknown"),
+            "matched_keywords": result.get("matched_keywords", []),
+            "feedback": result["feedback"],
+        },
+        "before_state": before_state,
+        "after_state": snapshot_state(state),
+    })
     return result
 
 
